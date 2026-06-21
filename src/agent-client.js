@@ -6,22 +6,35 @@ import { join } from "path";
 /**
  * AgentClient - 通过 claude -p 子进程接入 Claude Code 作为 AI Agent
  *
- * 将 QQ 消息写入临时文件，调用 claude -p 处理并获取回复。
- * 使用临时文件避免 Windows 命令行转义问题。
+ * 每条对话保留最近 6 条历史记录，随新消息一起喂给 Claude Code，
+ * 实现上下文连贯的多轮对话。
  */
 export class AgentClient {
   constructor() {
-    // Windows 下需要 .cmd 后缀才能被 cmd.exe 正确识别
     this.claudePath = process.platform === "win32"
       ? join(process.env.APPDATA || "", "npm", "claude.cmd")
       : "claude";
     this.tempDir = mkdtempSync(join(tmpdir(), "qq-relay-"));
+
+    /** 对话历史缓存
+     *  key  = 私聊: openid  /  群聊: group_id
+     *  val  = Array<{ role: "用户"|"你", content: string }> 最多 6 条
+     */
+    this.historyMap = new Map();
+    this.MAX_HISTORY = 6;
+  }
+
+  /**
+   * 获取会话的唯一 key
+   */
+  _getConvKey(msg) {
+    return msg.type === "group" ? `group:${msg.group_id}` : `private:${msg.openid}`;
   }
 
   /**
    * 将 QQ 消息发给 Claude Code Agent 处理，获取回复
    */
-  async getReply(msg) {
+  getReply(msg) {
     const prefix = msg.type === "group" ? `[群聊 ${msg.group_id}] ` : "[私聊] ";
     console.log(`[Agent] 请求 Claude Code: ${prefix}${msg.content}`);
 
@@ -31,6 +44,12 @@ export class AgentClient {
 
       const trimmed = reply ? reply.slice(0, 80) + (reply.length > 80 ? "..." : "") : "(空)";
       console.log(`[Agent] Claude 回复: ${trimmed}`);
+
+      // 保存历史：用户消息 + 机器人回复
+      if (reply !== null) {
+        this._saveHistory(msg, reply);
+      }
+
       return reply;
 
     } catch (err) {
@@ -40,42 +59,75 @@ export class AgentClient {
   }
 
   /**
-   * 构造发给 Claude Code 的 prompt
+   * 构造发给 Claude Code 的 prompt（含历史记录）
    */
   _buildPrompt(msg) {
-    return [
+    const lines = [
       "你是 QQ 机器人助手 Vector，请回复以下通过",
       msg.type === "group" ? `QQ群(群ID:${msg.group_id})` : "QQ私聊",
-      "收到的用户消息。",
+      "收到的用户消息。保持对话连贯自然。",
       "",
       "回复要求:",
       "- 用中文回复，简洁自然",
-      "- 直接回复用户即可",
+      "- 直接回复用户即可，不要复述历史",
+      "- 禁止使用任何 emoji 和表情符号",
       "",
-      "用户消息:",
-      msg.content,
+      "你可以使用 MCP 工具和系统工具来帮助回答问题。",
       "",
-      "你的回复:",
-    ].join("\n");
+    ];
+
+    // 插入历史记录（最近 6 条）
+    const key = this._getConvKey(msg);
+    const history = this.historyMap.get(key);
+    if (history && history.length > 0) {
+      lines.push("--- 以下为最近的历史对话 ---");
+      for (const entry of history) {
+        lines.push(`${entry.role}: ${entry.content}`);
+      }
+      lines.push("--- 历史结束 ---");
+      lines.push("");
+    }
+
+    lines.push("用户消息:");
+    lines.push(msg.content);
+    lines.push("");
+    lines.push("你的回复:");
+
+    return lines.join("\n");
+  }
+
+  /**
+   * 保存消息到历史缓存（保留最近 MAX_HISTORY 条）
+   */
+  _saveHistory(msg, reply) {
+    const key = this._getConvKey(msg);
+    if (!this.historyMap.has(key)) {
+      this.historyMap.set(key, []);
+    }
+    const history = this.historyMap.get(key);
+
+    // 追加用户消息和机器人回复
+    history.push({ role: "用户", content: msg.content });
+    history.push({ role: "你", content: reply });
+
+    // 裁剪到最多 MAX_HISTORY 条
+    if (history.length > this.MAX_HISTORY) {
+      const excess = history.length - this.MAX_HISTORY;
+      history.splice(0, excess);
+    }
   }
 
   /**
    * 调用 claude -p 子进程获取回复
-   *
-   * 使用临时文件传递 prompt，避免 Windows 命令行长度和转义问题。
    */
   _callClaude(prompt) {
-    // 写 prompt 到临时文件
     const tmpFile = join(this.tempDir, `prompt_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.txt`);
     writeFileSync(tmpFile, prompt, "utf-8");
 
     try {
-      // Windows: cmd.exe 调用 claude.cmd；类 Unix: 直接调 claude
-      const shell = process.platform === "win32" ? undefined : undefined; // 使用默认 shell
-
       const cmd = process.platform === "win32"
-        ? `"${this.claudePath}" -p --bare --allowedTools "" < "${tmpFile}"`
-        : `claude -p --bare --allowedTools "" < "${tmpFile}"`;
+        ? `"${this.claudePath}" -p --bare < "${tmpFile}"`
+        : `claude -p --bare < "${tmpFile}"`;
 
       const output = execSync(cmd, {
         timeout: 120000,
@@ -87,7 +139,6 @@ export class AgentClient {
       return output.trim();
 
     } finally {
-      // 清理临时文件
       try { unlinkSync(tmpFile); } catch { /* 忽略清理失败 */ }
     }
   }
