@@ -28,10 +28,7 @@ claude -p (调用 Claude Code CLI 作为 Agent 处理消息)
 | **Node.js** | >= 18 | 运行本程序 | [nodejs.org](https://nodejs.org) |
 | **Claude Code CLI** | 最新版 | AI Agent 核心 | `npm i -g @anthropic-ai/claude-code` |
 | **uv** | 最新版 | 运行 MCP 工具（进程管理/自动化/OCR） | 详见 [docs.astral.sh/uv](https://docs.astral.sh/uv/) |
-| **exa-mcp-server** | 最新版 | 网页搜索（可选） | `npm i -g exa-mcp-server` |
-
 其中 `claude` 和 `uv` 需要手动安装，npm 依赖（`ws`、`dotenv`）由安装向导自动处理。
-`exa-mcp-server` 如未安装，Claude Code 也可通过 WebFetch 直接访问网页。
 
 > Windows 用户建议使用 **Git Bash** 或 **PowerShell** 运行本程序。
 
@@ -87,7 +84,6 @@ node setup.js show-id       # 显示已保存的用户信息
 
 程序通过 `claude.json` 配置 MCP 服务器，spawn 的 Claude Code 子进程自动加载以下工具：
 
-- **exa-mcp-server**: 网页搜索与抓取
 - **kill-process**: 进程管理
 - **mcp-pyautogui**: 鼠标键盘自动化
 - **mcp-vision**: 图片分析与 OCR
@@ -127,11 +123,6 @@ stop.bat          一键停止脚本
 
   # macOS / Linux
   curl -LsSf https://astral.sh/uv/install.sh | sh
-  ```
-
-- **exa-mcp-server**（可选）— 为 Claude Code 提供网页搜索能力，如未安装可通过 WebFetch 直接访问：
-  ```bash
-  npm install -g exa-mcp-server
   ```
 
 ### MCP 工具（由 uvx 自动管理）
