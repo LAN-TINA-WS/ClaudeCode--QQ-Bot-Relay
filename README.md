@@ -43,6 +43,8 @@ Every message is processed by a full Claude Code agent with tool calling, contex
 
 `claude` 和 `uv` 需手动安装，npm 依赖由安装向导自动处理。
 
+> Windows: **Git Bash** or **PowerShell** recommended.
+
 ---
 
 ## Quick Start / 快速开始
