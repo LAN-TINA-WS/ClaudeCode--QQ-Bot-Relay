@@ -25,9 +25,9 @@ claude -p (Claude Code CLI Agent)
 Reply back to QQ / 回复消息到 QQ
 ```
 
-Every message is processed by a full Claude Code agent with tool calling, MCP servers, and context awareness — not just a simple API call.
+Every message is processed by a full Claude Code agent with tool calling, context awareness — not just a simple API call.
 
-每条消息都通过完整的 Claude Code Agent 处理，拥有工具调用、MCP 服务器、上下文记忆等能力。
+每条消息都通过完整的 Claude Code Agent 处理，拥有工具调用、上下文记忆等能力。
 
 ---
 
@@ -100,19 +100,6 @@ Set `CLAUDE_CODE_DIR` in `.env`, or configure it interactively via `setup.bat`. 
 
 通过 `.env` 中的 `CLAUDE_CODE_DIR` 指定，留空则使用默认路径。
 
-### MCP Tools
-
-MCP servers are defined in `claude.json`. The spawned Claude Code agent loads them automatically:
-
-- **kill-process** — Process management / 进程管理
-- **mcp-pyautogui** — Mouse & keyboard automation / 鼠标键盘自动化
-- **mcp-vision** — Image analysis & OCR / 图片分析与 OCR
-
-Edit `claude.json` to add or remove servers. MCP packages are auto-downloaded by `uvx` on first use.
-
-如需调整，直接编辑 `claude.json` 即可。MCP 包由 `uvx` 在首次调用时自动下载。
-
----
 
 ## File Structure / 文件结构
 
@@ -122,36 +109,38 @@ src/
   qq-client.js    QQ WebSocket client
   agent-client.js Claude Code agent launcher
   config.js       Config loader
-claude.json       MCP server definitions
-stop.bat          One-click stop script
+claude.json       MCP 服务器配置 / MCP server config
+stop.bat          停止脚本 / Stop script
 ```
 
 ---
 
 ## Dependencies / 依赖
 
-### npm (auto-installed / 自动安装)
+### npm（由 setup 自动安装 / auto-installed）
 
-- **ws** — QQ WebSocket client
-- **dotenv** — Environment variable loader
+- **ws** — QQ 开放平台 WebSocket 客户端 / QQ Open Platform WebSocket client
+- **dotenv** — 环境变量加载 / Environment variable loader
 
-### System Tools (manual install / 手动安装)
+### 系统工具（需手动安装 / manual install）
 
-**claude** (Claude Code CLI) — AI agent core:
+**claude**（Claude Code CLI）— AI Agent 核心，负责处理消息并调用工具：
 
 ```bash
 npm install -g @anthropic-ai/claude-code
 ```
 
-**uv** — MCP runtime. `uvx` auto-downloads and runs MCP server packages:
+**uv** — MCP 工具运行时，`uvx` 自动下载并执行 MCP 服务器包 / MCP runtime:
 
 ```bash
-# Windows (PowerShell)
+# Windows（PowerShell）
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 
 # macOS / Linux
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
+
+安装完成后运行 `setup.bat` 完成配置即可启动。/ After installation, run `setup.bat` to configure and start.
 
 ---
 
