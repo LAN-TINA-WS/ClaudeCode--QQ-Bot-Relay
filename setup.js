@@ -8,11 +8,11 @@
  *   node setup.js show-id        查看已保存的 openID
  */
 import "dotenv/config";
-import { readFileSync, writeFileSync, existsSync } from "fs";
+import { readFileSync, writeFileSync, existsSync, statSync } from "fs";
 import { createInterface } from "readline";
 import { execSync } from "child_process";
 
-const APP_VERSION = "1.0.0";
+const APP_VERSION = "1.1.0";
 
 // ============================================================
 // 工具
@@ -88,6 +88,29 @@ async function runSetup() {
     console.log("[OK] npm 依赖已就绪 / Dependencies ready\n");
   }
 
+  // ---- Step 0.5: Claude Code 位置 ----
+  console.log("--- Step 0.5: Claude Code 位置 / Claude Code Location ---\n");
+
+  const currentClaudeDir = readExistingEnv("CLAUDE_CODE_DIR") || "D:\\Deploy\\Claude Code";
+  const claudeDirPrompt = `  Claude Code 目录路径 / Directory path [${currentClaudeDir}]
+  （留空不变 / leave blank to keep）: `;
+  const claudeDir = await readLine(claudeDirPrompt);
+  const finalClaudeDir = (claudeDir || currentClaudeDir).replace(/\/$/, "").replace(/\\$/, "");
+
+  if (finalClaudeDir) {
+    // 验证目录是否存在
+    try {
+      const stat = await import("fs").then((fs) => fs.statSync(finalClaudeDir));
+      if (!stat.isDirectory()) {
+        console.warn("  [WARN] 路径存在但不是目录 / Path exists but is not a directory\n");
+      }
+    } catch {
+      console.warn("  [WARN] 目录不存在，将使用该路径 / Directory not found, will use it anyway\n");
+    }
+  }
+
+  console.log("");
+
   // ---- Step 1: QQ 凭证 ----
   console.log("--- Step 1: QQ Bot 凭证 / Credentials ---");
   console.log("（从 https://bots.qq.com 获取 / Get from bots.qq.com）\n");
@@ -125,12 +148,15 @@ async function runSetup() {
     `QQ_APP_ID=${finalAppId}`,
     `QQ_APP_SECRET=${finalAppSecret}`,
     "",
+    "# Claude Code configuration",
+    `CLAUDE_CODE_DIR=${finalClaudeDir}`,
     "# Claude Code model hint (optional)",
     "CLAUDE_MODEL=deepseek-v4-flash",
     "",
   ].join("\n");
   writeFileSync(".env", envContent, "utf-8");
-  console.log("\n[OK] .env 已保存 / saved\n");
+  console.log("[OK] .env 已保存 / saved");
+  console.log("     CLAUDE_CODE_DIR:", finalClaudeDir, "\n");
 
   // ---- Step 2: 测试连接 ----
   console.log("--- Step 2: 测试连接 / Test Connection ---");
@@ -198,7 +224,28 @@ function checkConfig() {
     console.log("      Dependencies not installed. Run: npm i");
     process.exit(1);
   }
-  console.log("[OK] npm 依赖已安装 / Dependencies installed\n");
+  console.log("[OK] npm 依赖已安装 / Dependencies installed");
+
+  // 检查 CLAUDE_CODE_DIR
+  const claudeDirMatch = env.match(/^CLAUDE_CODE_DIR=(.*)$/m);
+  if (claudeDirMatch && claudeDirMatch[1]) {
+    const dir = claudeDirMatch[1].trim();
+    try {
+      const stat = statSync(dir);
+      if (stat.isDirectory()) {
+        console.log("[OK] CLAUDE_CODE_DIR:", dir);
+      } else {
+        console.log("[WARN] CLAUDE_CODE_DIR 存在但不是目录:", dir);
+      }
+    } catch {
+      console.log("[WARN] CLAUDE_CODE_DIR 目录不存在:", dir);
+      console.log("       运行 setup 重新配置 / Run setup to reconfigure");
+    }
+  } else {
+    console.log("[WARN] CLAUDE_CODE_DIR 未配置 / not configured");
+    console.log("       运行 setup 重新配置 / Run setup to reconfigure");
+  }
+  console.log("");
 
   if (existsSync("config.json")) {
     const cfg = JSON.parse(readFileSync("config.json", "utf-8"));

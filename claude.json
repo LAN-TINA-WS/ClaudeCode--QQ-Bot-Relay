@@ -1,0 +1,26 @@
+{
+  "mcpServers": {
+    "exa-mcp-server": {
+      "command": "exa-mcp-server",
+      "args": [],
+      "env": {}
+    },
+    "kill-process": {
+      "command": "uvx",
+      "args": ["kill-process-mcp@latest"],
+      "env": {}
+    },
+    "mcp-pyautogui": {
+      "command": "uvx",
+      "args": ["mcp-pyautogui@latest"],
+      "env": {}
+    },
+    "mcp-vision": {
+      "command": "uvx",
+      "args": ["mcp-vision"],
+      "env": {
+        "SILICONFLOW_API_KEY": ""
+      }
+    }
+  }
+}

@@ -2,6 +2,7 @@ import { execSync } from "child_process";
 import { writeFileSync, unlinkSync, mkdtempSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
+import "dotenv/config";
 
 /**
  * AgentClient - 通过 claude -p 子进程接入 Claude Code 作为 AI Agent
@@ -11,9 +12,9 @@ import { join } from "path";
  */
 export class AgentClient {
   constructor() {
-    this.claudePath = process.platform === "win32"
-      ? join(process.env.APPDATA || "", "npm", "claude.cmd")
-      : "claude";
+    this.claudePath = process.env.CLAUDE_CODE_DIR
+      ? process.env.CLAUDE_CODE_DIR.replace(/\\+$/, "")
+      : "D:\\Deploy\\Claude Code";
     this.tempDir = mkdtempSync(join(tmpdir(), "qq-relay-"));
 
     /** 对话历史缓存
@@ -125,9 +126,8 @@ export class AgentClient {
     writeFileSync(tmpFile, prompt, "utf-8");
 
     try {
-      const cmd = process.platform === "win32"
-        ? `"${this.claudePath}" -p --bare < "${tmpFile}"`
-        : `claude -p --bare < "${tmpFile}"`;
+      const mcpConfigPath = join(process.cwd(), "claude.json");
+      const cmd = `claude -p --bare --tools "default" --mcp-config "${mcpConfigPath}" < "${tmpFile}"`;
 
       const output = execSync(cmd, {
         timeout: 120000,
