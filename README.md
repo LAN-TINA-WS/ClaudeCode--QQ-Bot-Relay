@@ -125,8 +125,3 @@ stop.bat          一键停止脚本
   curl -LsSf https://astral.sh/uv/install.sh | sh
   ```
 
-### MCP 工具（由 uvx 自动管理）
-
-`claude.json` 中配置的 MCP 服务器（kill-process、mcp-pyautogui、mcp-vision）由 `uvx`
-在首次调用时自动下载，无需手动安装。使用 mcp-vision 需在 `claude.json` 中配置
-`SILICONFLOW_API_KEY`。
