@@ -21,6 +21,20 @@ claude -p (调用 Claude Code CLI 作为 Agent 处理消息)
 区别于直接调 API：每条消息都通过 `claude -p` 交给 Claude Code（完整 AI Agent）
 处理，拥有完整的工具调用、MCP 工具、上下文等能力。
 
+## 环境要求
+
+| 依赖 | 版本要求 | 用途 | 安装方式 |
+|---|---|---|---|
+| **Node.js** | >= 18 | 运行本程序 | [nodejs.org](https://nodejs.org) |
+| **Claude Code CLI** | 最新版 | AI Agent 核心 | `npm i -g @anthropic-ai/claude-code` |
+| **uv** | 最新版 | 运行 MCP 工具（进程管理/自动化/OCR） | 详见 [docs.astral.sh/uv](https://docs.astral.sh/uv/) |
+| **exa-mcp-server** | 最新版 | 网页搜索（可选） | `npm i -g exa-mcp-server` |
+
+其中 `claude` 和 `uv` 需要手动安装，npm 依赖（`ws`、`dotenv`）由安装向导自动处理。
+`exa-mcp-server` 如未安装，Claude Code 也可通过 WebFetch 直接访问网页。
+
+> Windows 用户建议使用 **Git Bash** 或 **PowerShell** 运行本程序。
+
 ## 快速开始
 
 ### 首次使用：一键配置
@@ -94,5 +108,34 @@ stop.bat          一键停止脚本
 
 ## 依赖
 
-仅需 `ws`（WebSocket）和 `dotenv`（环境变量），AI 处理完全依赖系统已安装的
-`claude` 命令（Claude Code CLI）。MCP 工具由 `uvx` 管理。
+### npm（由 setup.bat 自动安装）
+
+- **ws** — QQ 开放平台 WebSocket 客户端
+- **dotenv** — 从 `.env` 加载环境变量
+
+### 系统工具（需手动安装）
+
+- **claude**（Claude Code CLI）— AI Agent 核心，处理用户消息并调用工具。建议全局安装：
+  ```bash
+  npm install -g @anthropic-ai/claude-code
+  ```
+
+- **uv** — MCP 工具运行时，`uvx` 自动下载并执行 MCP 服务器包：
+  ```bash
+  # Windows (PowerShell)
+  powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+  # macOS / Linux
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  ```
+
+- **exa-mcp-server**（可选）— 为 Claude Code 提供网页搜索能力，如未安装可通过 WebFetch 直接访问：
+  ```bash
+  npm install -g exa-mcp-server
+  ```
+
+### MCP 工具（由 uvx 自动管理）
+
+`claude.json` 中配置的 MCP 服务器（kill-process、mcp-pyautogui、mcp-vision）由 `uvx`
+在首次调用时自动下载，无需手动安装。使用 mcp-vision 需在 `claude.json` 中配置
+`SILICONFLOW_API_KEY`。
