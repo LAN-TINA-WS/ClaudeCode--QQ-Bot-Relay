@@ -70,6 +70,8 @@ The wizard will guide you through / 安装向导会依次：
 npm start
 ```
 
+或双击 `start.bat`。程序启动后自动连接 QQ，收到消息后调用 `claude -p` 获取 AI 回复并发送回用户。
+
 Or double-click `start.bat`. The bot connects to QQ and starts processing messages automatically.
 
 ### Stop / 停止
